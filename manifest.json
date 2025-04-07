@@ -1,0 +1,22 @@
+{
+  "name": "sample-app",
+  "title": "Sample App",
+  "description": "Assignement for JetBrains internship",
+  "$schema": "https://json.schemastore.org/youtrack-app.json",
+  "vendor": {
+    "name": "Jakub Steć",
+    "url": "https://github.com/jakubstec/youtrack-app"
+  },
+  "icon": "icon.svg",
+  "widgets": [
+
+    {
+      "key": "sample-widget",
+      "name": "Sample-Widget",
+      "indexPath": "sample-widget/index.html",
+      "extensionPoint": "MAIN_MENU_ITEM",
+      "iconPath": "sample-widget/widget-icon.svg",
+      "description": "Sample description"
+    }
+  ]
+}
