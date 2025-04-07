@@ -17,6 +17,7 @@ interface Project {
 
 const AppComponent: React.FunctionComponent = () => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [testFlag, setTestFlag] = useState<boolean>(false);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -28,65 +29,87 @@ const AppComponent: React.FunctionComponent = () => {
     }
   }, []);
 
+  // unfortunately didnt manage to get this flag working :(
+  const fetchTestFlag = useCallback(async () => {
+    try {
+      const response = await host.fetchApp('test-flag');
+      const data = await (response as Response).json();
+      setTestFlag(data.enabled);
+    } catch {
+      // eslint-disable-next-line no-console
+      console.error('Error fetching test flag');
+    }
+  }, []);
+
+
+  const updateTestFlag = useCallback(async (newValue: boolean) => {
+    try {
+      await host.fetchApp('test-flag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({enable: newValue})
+      });
+      setTestFlag(newValue);
+    } catch {
+      // eslint-disable-next-line no-console
+      console.error('Error updating test flag');
+    }
+  }, []);
+
+  const handleToggleChange = useCallback(() => {
+    updateTestFlag(!testFlag);
+  }, [testFlag, updateTestFlag]);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
 
+  useEffect(() => {
+    fetchTestFlag();
+  }, [fetchTestFlag]);
 
   return (
     <div className="widget">
       <div className="heading-container">
         <Heading>YouTrack Projects</Heading>
       </div>
-      
+
       <Panel className="panel-controls">
-        <Toggle 
+        <Toggle
           size={Size.Size20}
-          name="feature-flag"
-          checked
-          onChange={() => {}}
-        >Feature flag</Toggle>
-        
+          name="test-flag"
+          checked={testFlag}
+          onChange={handleToggleChange}
+        >
+          Test flag
+        </Toggle>
+        <Text>Test flag is {testFlag ? 'enabled' : 'disabled'}</Text>
         <Button primary onClick={fetchProjects}>
           Refresh Projects
         </Button>
       </Panel>
-      
+
       <div className="project-container">
         {projects.length > 0 ? (
           <div>
             {projects.map(project => (
-              <div 
-                key={project.id}
-                className="project-item"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '16px',
-                  margin: '12px 0',
-                  borderRadius: '8px',
-                  border: '1px solid var(--ring-border-color)',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                  backgroundColor: 'var(--ring-content-background-color)'
-                }}
-              >
-                <img 
-                  src={project.iconUrl} 
-                  alt={project.name} 
-                  width="40" 
+              <div className="project-item" key={project.id}>
+                <img
+                  src={project.iconUrl}
+                  alt={project.name}
+                  width="40"
                   height="40"
-                  style={{marginRight: '12px', verticalAlign: 'middle'}}
                 />
-                <Text style={{fontSize: '16px', fontWeight: 500}}>{project.name}</Text>
+                <Text className="project-name">{project.name}</Text>
                 <Text>{` (${project.shortName})`}</Text>
                 {project.description && (
-                <div style={{marginTop: '8px', paddingLeft: '52px'}}>
-                  <Text style={{color: 'var(--ring-secondary-color, #999)', fontSize: '12px', fontWeight: 500, marginBottom: '2px'}}>Description: </Text>
-                  <Text style={{color: 'var(--ring-secondary-color)'}}>{project.description}</Text>
-                </div>
-)}
+                  <div className="project-description">
+                    <Text className="label">Description: </Text>
+                    <Text className="text">{project.description}</Text>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -94,7 +117,6 @@ const AppComponent: React.FunctionComponent = () => {
           <Text>No projects loaded. Click Refresh Projects to load projects.</Text>
         )}
       </div>
-    
     </div>
   );
 };

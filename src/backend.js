@@ -1,13 +1,24 @@
+  // unfortunately didnt manage to get this flag working :(
 exports.httpHandler = {
   endpoints: [
     {
       method: 'GET',
-      path: 'debug',
+      path: '/test-flag',
       handle: function handle(ctx) {
-        // See https://www.jetbrains.com/help/youtrack/devportal-apps/apps-reference-http-handlers.html#request
-        const requestParam = ctx.request.getParameter('test');
-        // See https://www.jetbrains.com/help/youtrack/devportal-apps/apps-reference-http-handlers.html#response
-        ctx.response.json({test: requestParam});
+        const storage = ctx.storage;
+        const testFlag = storage.get('test-flag') || false;
+        ctx.response.json({enabled: testFlag});
+      }
+    },
+    {
+      method: 'POST',
+      path: '/test-flag',
+      handle: function handle(ctx) {
+        const storage = ctx.storage;
+        const requestBody = ctx.request.body;
+        const newState = requestBody.enabled;
+        storage.set('test-flag', newState);
+        ctx.response.json({enabled: newState, success: true});
       }
     }
   ]
