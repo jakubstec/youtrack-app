@@ -1,24 +1,33 @@
-  // unfortunately didnt manage to get this flag working :(
+/*
+Description:
+  HTTP endpoints:
+    GET to retrieve the current state of the falg
+    POST to update the flag's state
+  Uses YouTrack's global storage to persist the flag value
+  flag is accessed via extensionProperties.globalTestFlag which is defined in entity-extensions.json
+
+Possible improvements
+  Error handling for both handlers
+*/
+
 exports.httpHandler = {
   endpoints: [
     {
       method: 'GET',
       path: '/test-flag',
       handle: function handle(ctx) {
-        const storage = ctx.storage;
-        const testFlag = storage.get('test-flag') || false;
-        ctx.response.json({enabled: testFlag});
+        const flag = ctx.globalStorage.extensionProperties.globalTestFlag || false;
+        ctx.response.json({value: flag});
       }
     },
     {
       method: 'POST',
       path: '/test-flag',
       handle: function handle(ctx) {
-        const storage = ctx.storage;
-        const requestBody = ctx.request.body;
-        const newState = requestBody.enabled;
-        storage.set('test-flag', newState);
-        ctx.response.json({enabled: newState, success: true});
+        const requestBody = ctx.request.json();
+        const newStateValue = requestBody.value;
+        ctx.globalStorage.extensionProperties.globalTestFlag = newStateValue;
+        ctx.response.json({value: newStateValue, success: true});
       }
     }
   ]

@@ -15,6 +15,10 @@ interface Project {
   description: string;
 }
 
+interface FlagResponse {
+  value: boolean;
+}
+
 const AppComponent: React.FunctionComponent = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [testFlag, setTestFlag] = useState<boolean>(false);
@@ -29,29 +33,30 @@ const AppComponent: React.FunctionComponent = () => {
     }
   }, []);
 
-  // unfortunately didnt manage to get this flag working :(
   const fetchTestFlag = useCallback(async () => {
     try {
-      const response = await host.fetchApp('test-flag');
-      const data = await (response as Response).json();
-      setTestFlag(data.enabled);
+      const response = await host.fetchApp('backend/test-flag', {
+        method: 'GET'
+      });
+      const data = response as FlagResponse;
+      setTestFlag(data.value);
+      // console.log("(fetch) flag val", data.value);
     } catch {
       // eslint-disable-next-line no-console
       console.error('Error fetching test flag');
+      setTestFlag(false);
     }
   }, []);
 
 
   const updateTestFlag = useCallback(async (newValue: boolean) => {
     try {
-      await host.fetchApp('test-flag', {
+      await host.fetchApp('backend/test-flag', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({enable: newValue})
+        body: JSON.stringify({value: newValue})
       });
       setTestFlag(newValue);
+      // console.log("(update) flag val", newValue);
     } catch {
       // eslint-disable-next-line no-console
       console.error('Error updating test flag');
