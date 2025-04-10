@@ -1,13 +1,10 @@
 /*
 Description:
   HTTP endpoints:
-    GET to retrieve the current state of the falg
+    GET to retrieve the current state of the flag
     POST to update the flag's state
   Uses YouTrack's global storage to persist the flag value
   flag is accessed via extensionProperties.globalTestFlag which is defined in entity-extensions.json
-
-Possible improvements
-  Error handling for both handlers
 */
 
 exports.httpHandler = {

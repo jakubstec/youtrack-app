@@ -1,67 +1,71 @@
 import React, {memo, useState, useCallback, useEffect} from 'react';
-import Button from '@jetbrains/ring-ui-built/components/button/button';
-import Toggle, { Size } from '@jetbrains/ring-ui-built/components/toggle/toggle';
-import Text from '@jetbrains/ring-ui-built/components/text/text';
-import Panel from '@jetbrains/ring-ui-built/components/panel/panel';
-import Heading from '@jetbrains/ring-ui-built/components/heading/heading';
+import { AppLayout } from './components/AppLayout';
+import { ToggleSection } from './components/Controls/ToggleSection';
+import { ProjectsList } from './components/Projects/ProjectList';
+import { Project, FlagResponse} from './types';
 
 const host = await YTApp.register();
-
-interface Project {
-  id: string;
-  name: string;
-  shortName: string;
-  iconUrl: string;
-  description: string;
-}
-
-interface FlagResponse {
-  value: boolean;
-}
 
 const AppComponent: React.FunctionComponent = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [testFlag, setTestFlag] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const handleError = useCallback( (error: unknown, defaultMessage: string) => {
+    // eslint-disable-next-line no-console
+    console.error(defaultMessage, error);
+  }, []);
 
   const fetchProjects = useCallback(async () => {
     try {
-      const result = await host.fetchYouTrack('admin/projects?fields=id,name,shortName,iconUrl,description');
+      setIsLoading(true);
+      const result = await host.fetchYouTrack('admin/projects?fields=id,name,shortName,iconUrl,description', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
       setProjects(result as Project[]);
-    } catch {
-      // eslint-disable-next-line no-console
-      console.error('Error fetching projects');
+    } catch (error) {
+      handleError(error, "Error fetching projects");
+      setProjects([]);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  }, [handleError]);
 
   const fetchTestFlag = useCallback(async () => {
     try {
       const response = await host.fetchApp('backend/test-flag', {
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
       });
       const data = response as FlagResponse;
       setTestFlag(data.value);
-      // console.log("(fetch) flag val", data.value);
-    } catch {
-      // eslint-disable-next-line no-console
-      console.error('Error fetching test flag');
+    } catch (error) {
+      handleError(error, "Error fetching test flag");
       setTestFlag(false);
     }
-  }, []);
+  }, [handleError]);
 
 
   const updateTestFlag = useCallback(async (newValue: boolean) => {
     try {
       await host.fetchApp('backend/test-flag', {
         method: 'POST',
-        body: JSON.stringify({value: newValue})
+        body: JSON.stringify({value: newValue}),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
       });
       setTestFlag(newValue);
-      // console.log("(update) flag val", newValue);
-    } catch {
-      // eslint-disable-next-line no-console
-      console.error('Error updating test flag');
+    } catch (error) {
+      handleError(error, "Error updating test flag");
     }
-  }, []);
+  }, [handleError]);
 
   const handleToggleChange = useCallback(() => {
     updateTestFlag(!testFlag);
@@ -76,54 +80,23 @@ const AppComponent: React.FunctionComponent = () => {
   }, [fetchTestFlag]);
 
   return (
-    <div className="widget">
-      <div className="heading-container">
-        <Heading>YouTrack Projects</Heading>
-      </div>
-
-      <Panel className="panel-controls">
-        <Toggle
-          size={Size.Size20}
-          name="test-flag"
-          checked={testFlag}
-          onChange={handleToggleChange}
-        >
-          Test flag
-        </Toggle>
-        <Text>Test flag is {testFlag ? 'enabled' : 'disabled'}</Text>
-        <Button primary onClick={fetchProjects}>
-          Refresh Projects
-        </Button>
-      </Panel>
-
-      <div className="project-container">
-        {projects.length > 0 ? (
-          <div>
-            {projects.map(project => (
-              <div className="project-item" key={project.id}>
-                <img
-                  src={project.iconUrl}
-                  alt={project.name}
-                  width="40"
-                  height="40"
-                />
-                <Text className="project-name">{project.name}</Text>
-                <Text>{` (${project.shortName})`}</Text>
-                {project.description && (
-                  <div className="project-description">
-                    <Text className="label">Description: </Text>
-                    <Text className="text">{project.description}</Text>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Text>No projects loaded. Click Refresh Projects to load projects.</Text>
-        )}
-      </div>
+    <div className="app-container">
+      {isLoading ? (
+        <div className="loading-state">
+          <p>Loading projects...</p>
+        </div>
+      ) : (
+        <AppLayout>
+          <ToggleSection 
+            testFlag={testFlag}
+            onToggle={handleToggleChange}
+            onRefresh={fetchProjects}
+          />
+          <ProjectsList projects={projects}/>
+        </AppLayout>
+      )}
     </div>
-  );
+    );
 };
 
 export const App = memo(AppComponent);
